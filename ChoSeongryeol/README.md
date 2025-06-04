@@ -147,7 +147,17 @@ SKN14-2nd-6Team
 
 ### 📊 모델별 성능 비교 결과
 
-![](./image/model_fit.png)
+===== 모델별 최고 CV 점수 및 하이퍼파라미터 =====
+
+모델: LGBMClassifier
+  최고 검증점수: 0.9166
+  최고 파라미터: {'classifier__subsample': 0.9, 'classifier__reg_lambda': 0.1, 'classifier__reg_alpha': 0, 'classifier__num_leaves': 20, 'classifier__n_estimators': 100, 'classifier__max_depth': 5, 'classifier__learning_rate': 0.1, 'classifier__colsample_bytree': 0.8, 'classifier': LGBMClassifier(feature_name='auto', n_jobs=-1, random_state=42, verbose=-1)}
+
+
+[Best Model 평가 결과]
+Validation Accuracy with threshold 0.5: 0.9088
+Validation F1 Score with threshold 0.5: 0.9277
+
 
 
 >> 하이퍼 파라미터에 LogisticRegression, SVC, KNeighbors, RandomForest, XGBoost, LightGBM, CatBoost 사용 <br>
