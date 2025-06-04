@@ -17,48 +17,70 @@ import warnings
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
-# 📍 절대 경로 설정
+#  절대 경로 설정
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # /train 상위
 DATA_PATH = os.path.join(BASE_DIR, "data", "dataset.csv")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
-# ✅ 데이터 로드
+#  데이터 로드
 df = pd.read_csv(DATA_PATH)
 
-# ✅ 불필요한 컬럼 제거
-drop_cols = [
-    'Application mode', 'Application order', 'Nationality',
-    "Mother's qualification", "Father's qualification", 'International',
-    'Curricular units 1st sem (credited)', 'Curricular units 1st sem (enrolled)',
-    'Curricular units 1st sem (evaluations)', 'Curricular units 1st sem (without evaluations)',
-    'Curricular units 2nd sem (credited)', 'Curricular units 2nd sem (enrolled)',
-    'Curricular units 2nd sem (evaluations)', 'Curricular units 2nd sem (without evaluations)',
-    'Unemployment rate', 'Inflation rate', 'GDP'
-]
-df.drop(columns=drop_cols, inplace=True)
+# 불필요한 컬럼(열) 삭제
+df = df.drop(['Application mode'], axis=1)
+df = df.drop(['Application order'], axis=1)
+df = df.drop(['Nationality'], axis=1)
+df = df.drop(['Mother\'s qualification'], axis=1)
+df = df.drop(['Father\'s qualification'], axis=1)
+df = df.drop(['International'], axis=1)
+df = df.drop(['Curricular units 1st sem (credited)'], axis=1)
+df = df.drop(['Curricular units 1st sem (enrolled)'], axis=1)
+df = df.drop(['Curricular units 1st sem (evaluations)'], axis=1)
+df = df.drop(['Curricular units 1st sem (without evaluations)'], axis=1)
+df = df.drop(['Curricular units 2nd sem (credited)'], axis=1)
+df = df.drop(['Curricular units 2nd sem (enrolled)'], axis=1)
+df = df.drop(['Curricular units 2nd sem (evaluations)'], axis=1)
+df = df.drop(['Curricular units 2nd sem (without evaluations)'], axis=1)
+df = df.drop(['Unemployment rate'], axis=1)
+df = df.drop(['Inflation rate'], axis=1)
+df = df.drop(['GDP'], axis=1)
 
-# ✅ 타겟 변수 매핑
+# 타겟 변수 매핑
 df['Target'] = df['Target'].map({'Dropout': 0, 'Graduate': 1, 'Enrolled': 2})
 df = df[df['Target'] != 2]  # Enrolled 제거
 
-# ✅ 특성 및 타겟 분리
 X = df.drop('Target', axis=1)
 y = df['Target']
 
-# ✅ 학습/검증/테스트 분리
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.2, random_state=42, stratify=y_train)
 
-# ✅ 범주형 & 수치형 변수 지정
-categorical_cols = [
-    'Marital status', 'Course', 'Daytime/evening attendance',
-    'Previous qualification', "Mother's occupation", "Father's occupation",
-    'Displaced', 'Educational special needs', 'Debtor',
-    'Tuition fees up to date', 'Gender', 'Scholarship holder'
+#%%
+from sklearn.ensemble import RandomForestClassifier
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+
+
+# 범주형 변수 목록 (사용자 정의)
+cat_cols = [
+    'Marital status',
+    'Course',
+    'Daytime/evening attendance',
+    'Previous qualification',
+    "Mother's occupation",
+    "Father's occupation",
+    'Displaced',
+    'Educational special needs',
+    'Debtor',
+    'Tuition fees up to date',
+    'Gender',
+    'Scholarship holder'
 ]
 
-numeric_cols = [
+# 수치형 변수 목록 (cat_cols 제외한 나머지)
+
+num_cols = [
     'Age',
     'Curricular units 1st sem (approved)',
     'Curricular units 1st sem (grade)',
@@ -66,87 +88,130 @@ numeric_cols = [
     'Curricular units 2nd sem (grade)'
 ]
 
-# ✅ 전처리 파이프라인
+
+# 전처리 파이프라인 정의
 numeric_transformer = Pipeline([('scaler', StandardScaler())])
-categorical_transformer = Pipeline([('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))])
 
-preprocessor = ColumnTransformer([
-    ('num', numeric_transformer, numeric_cols),
-    ('cat', categorical_transformer, categorical_cols)
-]).set_output(transform='pandas')
+categorical_transformer = Pipeline([('onehot', OneHotEncoder(handle_unknown='ignore',sparse_output=False))])
 
-# ✅ 전체 파이프라인
-pipeline = Pipeline([
-    ('preprocessor', preprocessor),
-    ('classifier', LogisticRegression())
-])
+preprocessor = ColumnTransformer([('num', numeric_transformer, num_cols),('cat', categorical_transformer, cat_cols)]).set_output(transform='pandas')
 
-# ✅ 모델 후보 + 하이퍼파라미터
+# 파이프라인 정의 (scaler 대신 preprocessor)
+pipeline = Pipeline([('preprocessor', preprocessor),('classifier', LogisticRegression())])
+
 param_grid = [
-    {
+  # LogisticRegression
+  {
         'classifier': [LogisticRegression(max_iter=1000, random_state=42)],
         'classifier__C': [0.01, 0.1, 1, 10],
         'classifier__solver': ['liblinear', 'lbfgs'],
     },
-    {
-        'classifier': [SVC(probability=True, random_state=42)],
+  # SVC
+  {
+        'classifier': [SVC(random_state=42)],
         'classifier__kernel': ['linear', 'rbf'],
         'classifier__C': [0.1, 1, 10],
     },
-    {
+  # KNeighborsClassifier
+  {
         'classifier': [KNeighborsClassifier()],
         'classifier__n_neighbors': [3, 5, 7],
         'classifier__weights': ['uniform', 'distance'],
     },
-    {
+
+  # RandomForestClassifier (전처리 그대로 둬도 무방, 스케일링 영향 적음)
+  {
         'classifier': [RandomForestClassifier(random_state=42)],
-        'classifier__n_estimators': [100, 200],
+        'classifier__n_estimators': [100, 200, 300],
         'classifier__max_depth': [None, 10, 20],
     },
-    {
+  # XGBClassifier
+  {
         'classifier': [XGBClassifier(eval_metric='logloss', random_state=42, n_jobs=-1)],
-        'classifier__n_estimators': [100, 200],
-        'classifier__max_depth': [3, 5],
-        'classifier__learning_rate': [0.05, 0.1],
-    },
-    {
-        'classifier': [LGBMClassifier(random_state=42, verbose=-1, n_jobs=-1)],
-        'classifier__n_estimators': [100, 200],
-        'classifier__max_depth': [-1, 5, 10],
+        'classifier__n_estimators': [100, 200, 300, 500],
+        'classifier__max_depth': [3, 5, 7, 9],
+        'classifier__learning_rate': [0.05, 0.1, 0.2],
+     },
+  # LGBMClassifier
+  {
+        'classifier': [LGBMClassifier(random_state=42, n_jobs=-1, verbose=-1, feature_name='auto')],
+        'classifier__n_estimators': [100, 200, 300, 400],
+        'classifier__max_depth': [-1, 5, 10, 10],
+        'classifier__num_leaves': [20, 31, 40, 50],
         'classifier__learning_rate': [0.01, 0.05, 0.1],
+        'classifier__subsample': [0.7, 0.8, 0.9, 1.0],
+        'classifier__colsample_bytree': [0.7, 0.8, 0.9, 1.0],
+        'classifier__reg_alpha': [0, 0.1, 0.01],
+        'classifier__reg_lambda': [0, 0.1, 0.01]
     },
-    {
+  # CatBoostClassifier
+  {
         'classifier': [CatBoostClassifier(verbose=0, random_state=42)],
-        'classifier__iterations': [100, 200],
-        'classifier__depth': [4, 6, 8],
-        'classifier__learning_rate': [0.01, 0.05, 0.1],
-    },
+        'classifier__iterations': [50, 100, 200, 500],
+        'classifier__depth': [4, 6, 8 ,10],
+        'classifier__learning_rate': [0.01, 0.05,  0.1],
+    }
+
+
 ]
 
-# ✅ RandomizedSearchCV 설정
+
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 grid_search = RandomizedSearchCV(
     estimator=pipeline,
     param_distributions=param_grid,
     cv=cv,
-    scoring='accuracy',
     n_jobs=-1,
-    verbose=2
+    verbose=2,
+    scoring='f1'
 )
 
-# ✅ 모델 학습
 grid_search.fit(X_train, y_train)
 
-# ✅ 결과 출력
-print(f"\n✅ Best Validation Score: {grid_search.best_score_:.4f}")
-print(f"✅ Best Params: {grid_search.best_params_}")
+print(f"Best Validation Score: {grid_search.best_score_:.4f}")
+print(f"Best Params: {grid_search.best_params_}")
 
-# ✅ 최종 검증 정확도
 val_score = grid_search.score(X_val, y_val)
-print(f"✅ Validation Accuracy: {val_score:.4f}")
+print(f"Validation Accuracy with best params: {val_score:.4f}")
 
-# ✅ 최종 모델 저장 (전체 파이프라인)
+
+from sklearn.metrics import f1_score, accuracy_score
+import numpy as np
+import pandas as pd
+
+# 1. grid_search 결과 DataFrame 변환 및 모델별 최고 점수/파라미터 출력
+results_df = pd.DataFrame(grid_search.cv_results_)
+results_df['classifier_name'] = results_df['param_classifier'].apply(lambda x: type(x).__name__)
+
+print("===== 모델별 최고 CV 점수 및 하이퍼파라미터 =====\n")
+for clf_name, group in results_df.groupby('classifier_name'):
+    idx = group['mean_test_score'].idxmax()
+    best_row = group.loc[idx]
+    print(f"모델: {clf_name}")
+    print(f"  최고 검증점수: {best_row['mean_test_score']:.4f}")
+    print(f"  최고 파라미터: {best_row['params']}\n")
+
+# 2. 최적 모델로 X_val 예측 (항상 파이프라인 전체에 원본 X_val을 넣어야 함)
+best_model = grid_search.best_estimator_
+
+# predict_proba 지원 여부 확인
+if hasattr(best_model.named_steps['classifier'], 'predict_proba'):
+    probs = best_model.predict_proba(X_val)[:, 1]
+    preds = (probs >= 0.5).astype(int)
+else:
+    preds = best_model.predict(X_val)
+
+# 3. 평가 지표 출력
+accuracy = accuracy_score(y_val, preds)
+f1 = f1_score(y_val, preds)
+
+print(f"\n[Best Model 평가 결과]")
+print(f"Validation Accuracy with threshold 0.5: {accuracy:.4f}")
+print(f"Validation F1 Score with threshold 0.5: {f1:.4f}")
+
+
+# 최종 모델 저장 (전체 파이프라인)
 best_model = grid_search.best_estimator_
 joblib.dump(best_model, os.path.join(MODEL_DIR, "best_model.pkl"))
 
-print(f"\n📁 전체 모델 파이프라인이 저장되었습니다: models/best_model.pkl")
+print(f"\n전체 모델 파이프라인이 저장되었습니다: models/best_model.pkl")
