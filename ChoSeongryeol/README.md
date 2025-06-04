@@ -147,21 +147,19 @@ SKN14-2nd-6Team
 
 ### 📊 모델별 성능 비교 결과
 
-===== 모델별 최고 CV 점수 및 하이퍼파라미터 =====
+| 모델명           | 최고 검증점수(CV) | 최고 파라미터 |
+|------------------|-------------------|--------------|
+| LGBMClassifier   | 0.9166            | subsample: 0.9, reg_lambda: 0.1, reg_alpha: 0, num_leaves: 20, n_estimators: 100, max_depth: 5, learning_rate: 0.1, colsample_bytree: 0.8 |
 
-모델: LGBMClassifier
-  최고 검증점수: 0.9166
-  최고 파라미터: {'classifier__subsample': 0.9, 'classifier__reg_lambda': 0.1, 'classifier__reg_alpha': 0, 'classifier__num_leaves': 20, 'classifier__n_estimators': 100, 'classifier__max_depth': 5, 'classifier__learning_rate': 0.1, 'classifier__colsample_bytree': 0.8, 'classifier': LGBMClassifier(feature_name='auto', n_jobs=-1, random_state=42, verbose=-1)}
-
-
-[Best Model 평가 결과]
-Validation Accuracy with threshold 0.5: 0.9088
-Validation F1 Score with threshold 0.5: 0.9277
+| 평가 지표                          | 값      |
+|-------------------------------------|---------|
+| Validation Accuracy (임계치 0.5)    | 0.9088  |
+| Validation F1 Score (임계치 0.5)    | 0.9277  |
 
 
 
 >> 하이퍼 파라미터에 LogisticRegression, SVC, KNeighbors, RandomForest, XGBoost, LightGBM, CatBoost 사용 <br>
->>  그 중 Best Param과 정확도를 가준으로 보았을 때, LightGBM 모델을 선정. 
+>>  그 중 F1 스코어 기반의 검증 점수와 Best Param과 정확도를 보았을 때, LightGBM 모델을 선정. 
 
 <br/><br/>
 
@@ -174,11 +172,19 @@ Validation F1 Score with threshold 0.5: 0.9277
 
 <br/>
 
-![](./image/deep_learning.png)
+| 지표             | 초기 값(에폭 1) | 최종 값(에폭 44) | 변화량     | 주요 관찰 사항              |
+|------------------|----------------|------------------|-----------|----------------------------|
+| Train Loss       | 0.6335         | 0.3204           | ▼ 49.4%   | 꾸준한 감소 추세           |
+| Val Loss         | 0.5259         | 0.3325           | ▼ 36.8%   | 0.33 수준에서 안정화        |
+| Train Accuracy   | 64.22%         | 88.44%           | ▲ 37.7%   | 지속적인 성능 향상         |
+| Val Accuracy     | 78.69%         | 87.29%           | ▲ 10.9%   | 검증 성능 87% 수렴          |
+| Learning Rate    | 0.001          | 0.000004         | ▼ 99.6%   | 효과적인 학습률 감소        |
+
 
 <br/>
 
->> Scheduler, EarlyStopping, Dropout을 사용하여 진행
+>> Scheduler, EarlyStopping, Dropout을 사용하여 진행 <br>
+>> Epoch 44에서 Early Stopping 작동
 
 <br/><br/>
 
