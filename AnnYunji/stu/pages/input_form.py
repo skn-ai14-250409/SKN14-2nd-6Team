@@ -15,12 +15,16 @@ scholarship_options = list(mappings.scholarship_holder_map.values())
 
 with st.form("student_form"):
     st.subheader("🎓 기본 정보")
+
+    # 학생 이름 입력 필드 추가
+    student_name = st.text_input("**학생 이름**")
+
     col1, col2 = st.columns(2)
     with col1:
         gender = st.selectbox("**성별**", gender_options)
         course = st.selectbox("**전공**", course_options)
     with col2:
-        marital_status = st.selectbox("**결혼 상태**", marital_status)
+        marital_status_selected = st.selectbox("**결혼 상태**", marital_status)  # 변수명 충돌 방지
         attendance = st.selectbox("**수업 형태**", attendance_options)
 
     age = st.slider("**입학 나이**", 17, 70, 21)
@@ -47,16 +51,16 @@ with st.form("student_form"):
 
     st.markdown("---")
     st.subheader("📝 기타 정보")
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
+    col1_misc, col2_misc, col3_misc, col4_misc, col5_misc = st.columns(5)  # 변수명 충돌 방지
+    with col1_misc:
         displaced = st.radio("**거주지 이탈 여부**", yes_no_options)
-    with col2:
+    with col2_misc:
         special_needs = st.radio("**특수 교육 필요**", yes_no_options)
-    with col3:
+    with col3_misc:
         debtor = st.radio("**채무 여부**", yes_no_options)
-    with col4:
+    with col4_misc:
         tuition_paid = st.radio("**등록금 납부 여부**", yes_no_options)
-    with col5:
+    with col5_misc:
         scholarship = st.radio("**장학금 수혜 여부**", scholarship_options)
 
     st.markdown("---")
@@ -66,25 +70,30 @@ with st.form("student_form"):
 # 제출 후 세션 저장 및 페이지 이동
 # ----------------------------
 if submitted:
-    st.session_state['form_input'] = {
-        'Course': course,
-        'Daytime/evening attendance': attendance,
-        'Previous qualification': prev_qual,
-        "Mother's occupation": mother_occ,
-        "Father's occupation": father_occ,
-        'Displaced': displaced,
-        'Educational special needs': special_needs,
-        'Debtor': debtor,
-        'Tuition fees up to date': tuition_paid,
-        'Gender': gender,
-        'Marital status': marital_status,
-        'Scholarship holder': scholarship,
-        'Age at enrollment': age,
-        'Curricular units 1st sem (approved)': cu1_approved,
-        'Curricular units 1st sem (grade)': cu1_grade,
-        'Curricular units 2nd sem (approved)': cu2_approved,
-        'Curricular units 2nd sem (grade)': cu2_grade
-    }
+    # 학생 이름이 비어있으면 경고 메시지 표시
+    if not student_name:
+        st.error("❗ 학생 이름을 입력해주세요.")
+    else:
+        st.session_state['form_input'] = {
+            'Student Name': student_name,  # 학생 이름 추가
+            'Course': course,
+            'Daytime/evening attendance': attendance,
+            'Previous qualification': prev_qual,
+            "Mother's occupation": mother_occ,
+            "Father's occupation": father_occ,
+            'Displaced': displaced,
+            'Educational special needs': special_needs,
+            'Debtor': debtor,
+            'Tuition fees up to date': tuition_paid,
+            'Gender': gender,
+            'Marital status': marital_status_selected,  # 수정된 변수명 사용
+            'Scholarship holder': scholarship,
+            'Age at enrollment': age,
+            'Curricular units 1st sem (approved)': cu1_approved,
+            'Curricular units 1st sem (grade)': cu1_grade,
+            'Curricular units 2nd sem (approved)': cu2_approved,
+            'Curricular units 2nd sem (grade)': cu2_grade
+        }
 
-    st.success("✅ 정보가 저장되었습니다. 예측 결과 페이지로 이동합니다.")
-    st.switch_page("pages/result.py")
+        st.success("✅ 정보가 저장되었습니다. 예측 결과 페이지로 이동합니다.")
+        st.switch_page("pages/result.py")
