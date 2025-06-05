@@ -14,6 +14,7 @@ st.set_page_config(
 
 # 로고 이미지 경로 설정
 LOGO_PATH = os.path.join("img", "logo.png")
+LOGO2_PATH = os.path.join("img", "logo2.png")
 
 # 세션 상태에서 데이터 가져오기
 if 'model' not in st.session_state:
@@ -120,6 +121,11 @@ st.markdown(
         height: 30px;
         width: auto;
     }
+    .logo-container a {
+        display: flex;
+        align-items: end;
+        gap: 10px;
+    }
     .nav-menu ul {
         list-style: none;
         margin: 0;
@@ -177,13 +183,22 @@ try:
 except FileNotFoundError:
     logo_base64 = ""
 
+try:
+    logo2_image = Image.open(LOGO2_PATH)
+    buffered = BytesIO()
+    logo2_image.save(buffered, format="PNG")
+    logo2_base64 = base64.b64encode(buffered.getvalue()).decode()
+except FileNotFoundError:
+    logo2_base64 = ""
+
 # 헤더 렌더링 (input_form.py와 동일)
 st.markdown(
     f"""
     <div class="header-container">
-        <div class="logo">
+        <div class="logo-container ">
             <a href="/" target="_self">
-                <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo">
+                <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo" style="cursor: pointer;" onclick="window.location.href = 'http://localhost:8501';">
+                <img src="data:image/png;base64,{logo2_base64}" class="logo-img" alt="PLAY DATA Logo2" style="width: 100px; height: auto;">
             </a>
         </div>
         <nav class="nav-menu">
@@ -357,3 +372,207 @@ with col_right:
         '''
     
     st.markdown(message, unsafe_allow_html=True)
+
+# --- row 구분선 ---
+st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
+
+# --- 세 번째 row: 성적 비교 그래프 ---
+st.markdown('<div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">성적 비교</div>', unsafe_allow_html=True)
+
+# 반 평균 성적 (예시 데이터 - 실제 데이터로 대체 필요)
+class_avg_1st = 14.5
+class_avg_2nd = 15.2
+class_min_1st = 10.0
+class_min_2nd = 11.0
+class_max_1st = 18.0
+class_max_2nd = 19.0
+
+# Plotly 그래프 생성
+import plotly.graph_objects as go
+
+fig = go.Figure(data=[
+    go.Bar(
+        name='학생 성적',
+        x=['1학기', '2학기'],
+        y=[form_original_labels["Curricular units 1st sem (grade)"], form_original_labels["Curricular units 2nd sem (grade)"]],
+        marker_color='#08519c',  # PLATTER BLUES - 진한 파랑
+        width=0.2
+    ),
+    go.Bar(
+        name='반 최고점',
+        x=['1학기', '2학기'],
+        y=[class_max_1st, class_max_2nd],
+        marker_color='#3182bd',  # PLATTER BLUES - 중간 파랑
+        width=0.2
+    ),
+    go.Bar(
+        name='반 최저점',
+        x=['1학기', '2학기'],
+        y=[class_min_1st, class_min_2nd],
+        marker_color='#6baed6',  # PLATTER BLUES - 연한 파랑
+        width=0.2
+    ),
+    go.Scatter(
+        name='반 평균',
+        x=['1학기', '2학기'],
+        y=[class_avg_1st, class_avg_2nd],
+        mode='lines+markers',
+        line=dict(
+            color='#dc3545',  # 빨간색
+            width=3,  # 선 두께 증가
+            dash='dot'
+        ),
+        marker=dict(
+            size=12,  # 마커 크기 증가
+            color='#dc3545',
+            line=dict(
+                color='#dc3545',
+                width=2
+            )
+        )
+    )
+])
+
+# 그래프 레이아웃 설정
+fig.update_layout(
+    title='학생 성적 vs 반 통계',
+    xaxis_title='학기',
+    yaxis_title='평균 점수',
+    barmode='group',
+    bargap=0.3,  # 바 사이의 간격
+    bargroupgap=0.1,  # 그룹 사이의 간격
+    height=400,
+    margin=dict(l=50, r=50, t=80, b=50),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
+
+# 그래프 표시
+st.plotly_chart(fig, use_container_width=True)
+
+# --- row 구분선 ---
+st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
+
+# --- 네 번째 row: 학점 분포도 ---
+st.markdown('<div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">학점 분포도</div>', unsafe_allow_html=True)
+
+# 예시 데이터 (실제 데이터로 대체 필요)
+grade_ranges = ['0-5', '5-10', '10-15', '15-20']
+class_distribution_1st = [5, 15, 45, 35]  # 1학기 분포 (%)
+class_distribution_2nd = [8, 18, 42, 32]  # 2학기 분포 (%)
+
+# 학생 성적
+student_grade_1st = form_original_labels["Curricular units 1st sem (grade)"]
+student_grade_2nd = form_original_labels["Curricular units 2nd sem (grade)"]
+
+# 그래프 생성
+fig2 = go.Figure()
+
+# 1학기 분포
+fig2.add_trace(
+    go.Bar(
+        name='1학기 분포',
+        x=grade_ranges,
+        y=class_distribution_1st,
+        marker_color='#00897b',  # 청록색
+        opacity=0.7,
+        width=0.4
+    )
+)
+
+# 2학기 분포
+fig2.add_trace(
+    go.Bar(
+        name='2학기 분포',
+        x=grade_ranges,
+        y=class_distribution_2nd,
+        marker_color='#4db6ac',  # 연한 청록색
+        opacity=0.7,
+        width=0.4
+    )
+)
+
+# 학생 성적 표시 (통합)
+student_grade = (student_grade_1st + student_grade_2nd) / 2  # 평균 성적
+grade_range = '10-15' if 10 <= student_grade < 15 else '15-20' if 15 <= student_grade <= 20 else '5-10' if 5 <= student_grade < 10 else '0-5'
+max_distribution = max(max(class_distribution_1st), max(class_distribution_2nd))
+
+fig2.add_trace(
+    go.Scatter(
+        name='학생 평균 성적',
+        x=[grade_range],
+        y=[max_distribution + 5],
+        mode='markers',
+        marker=dict(
+            symbol='star',
+            size=15,
+            color='#dc3545'
+        ),
+        showlegend=False
+    )
+)
+
+# 그래프 레이아웃 설정
+fig2.update_layout(
+    title='학점 분포도',
+    xaxis_title='학점 구간',
+    yaxis_title='학생 비율 (%)',
+    barmode='group',
+    bargap=0.15,
+    bargroupgap=0.1,
+    height=400,
+    margin=dict(l=50, r=50, t=80, b=50),
+    legend=dict(
+        orientation="h",
+        yanchor="bottom",
+        y=1.02,
+        xanchor="right",
+        x=1
+    )
+)
+
+# 그래프 표시
+st.plotly_chart(fig2, use_container_width=True)
+
+# 범례 추가
+st.markdown('''
+<div style="text-align: center; margin-top: 10px;">
+    <span style="color: #dc3545;">★</span> 학생 평균 성적 위치
+</div>
+''', unsafe_allow_html=True)
+
+# --- row 구분선 ---
+st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
+
+# 다른 학생 정보 입력 버튼
+st.markdown("""
+<style>
+.stButton {
+    display : flex;
+    justify-content: center;
+}
+.stButton > button {
+    width: 40%;
+    height: 50px;
+    background-color: #08519c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.stButton > button:hover {
+    background-color: #0d47a1;
+}
+</style>
+""", unsafe_allow_html=True)
+
+if st.button("다른 학생 정보 입력", key="new_student"):
+    st.switch_page("pages/input_form.py")

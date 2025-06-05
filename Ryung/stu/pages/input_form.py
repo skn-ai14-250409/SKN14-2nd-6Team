@@ -93,7 +93,7 @@ st.markdown(
         height: 30px;
         width: auto;
     }
-    .logo-container {
+    .logo-container a {
         display: flex;
         align-items: end;
         gap: 10px;
@@ -174,6 +174,11 @@ st.markdown(
         border-radius: 4px !important;
         border: 1px solid #ccc !important;
     }
+    .st-emotion-cache-16tyu1 e194bff00 {
+        height : 100%;
+        display: flex;
+        align-items: center;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -212,8 +217,10 @@ st.markdown(
     f"""
     <div class="header-container">
         <div class="logo-container">
-            <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo" style="cursor: pointer;" onclick="window.location.href = 'http://localhost:8501';">
-            <img src="data:image/png;base64,{logo2_base64}" class="logo-img" alt="PLAY DATA Logo2" style="width: 100px; height: auto;">
+            <a href="/" target="_self">
+                <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo" style="cursor: pointer;" onclick="window.location.href = 'http://localhost:8501';">
+                <img src="data:image/png;base64,{logo2_base64}" class="logo-img" alt="PLAY DATA Logo2" style="width: 100px; height: auto;">
+            </a>
         </div>
         <nav class="nav-menu">
             <ul>
@@ -240,7 +247,7 @@ if 'student_name' not in st.session_state:
     st.session_state.student_name = ""
 
 # 메인 컨텐츠
-st.markdown('<div style="height: 80px;"></div>', unsafe_allow_html=True)
+
 st.markdown('<h4 style="text-align: left; font-weight: bold;">학생 정보 입력</h4>', unsafe_allow_html=True)
 
 col_img, col_info = st.columns([1, 2], gap="large")
