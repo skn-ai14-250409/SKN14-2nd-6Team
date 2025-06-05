@@ -2,195 +2,238 @@ import streamlit as st
 from PIL import Image
 import os
 import joblib
-import pandas as pd # pandas import 추가
 import base64
 from io import BytesIO
 
-# --- 프로젝트 경로 설정 ---
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-IMG_DIR = os.path.join(BASE_DIR, "img")
-MODELS_DIR = os.path.join(BASE_DIR, "models")
-
-LOGO_PATH = os.path.join(IMG_DIR, "logo.png")
-IMG1_PATH = os.path.join(IMG_DIR, "img1.png")
-
+# --- 페이지 설정 (스크립트 최상단) ---
 st.set_page_config(
-    page_title="PLAY DATA 학생 관리", # 페이지 타이틀 변경
+    page_title="PLAY DATA",
     layout="wide",
-    initial_sidebar_state="collapsed" # 사이드바 기본적으로 닫힘
+    initial_sidebar_state="collapsed"
 )
 
-# --- 공통 변수 및 함수 ---
-# 노트북에서 최종 모델 학습에 사용된 특성들 (Target 제외, 드롭된 컬럼 제외)
-# 이 순서는 모델 예측 시 DataFrame 컬럼 순서에 매우 중요합니다.
-MODEL_FEATURES = [
-    'Marital status', 'Course', 'Daytime/evening attendance', 'Previous qualification',
-    "Mother's occupation", "Father's occupation", 'Displaced', 'Educational special needs', 'Debtor',
-    'Tuition fees up to date', 'Gender', 'Scholarship holder', 'Age',
-    'Curricular units 1st sem (approved)', 'Curricular units 1st sem (grade)',
-    'Curricular units 2nd sem (approved)', 'Curricular units 2nd sem (grade)'
-]
 
-# 원본 데이터셋의 모든 컬럼명 (Target 포함, 재학습 시 컬럼 검증용)
-ORIGINAL_COLUMNS = [
-    'Marital status', 'Application mode', 'Application order', 'Course',
-    'Daytime/evening attendance', 'Previous qualification', 'Nacionality', # 'Nacionality' 철자 주의
-    "Mother's qualification", "Father's qualification", "Mother's occupation",
-    "Father's occupation", 'Displaced', 'Educational special needs', 'Debtor',
-    'Tuition fees up to date', 'Gender', 'Scholarship holder', 'Age', 'International',
-    'Curricular units 1st sem (credited)', 'Curricular units 1st sem (enrolled)',
-    'Curricular units 1st sem (evaluations)', 'Curricular units 1st sem (approved)',
-    'Curricular units 1st sem (grade)', 'Curricular units 1st sem (without evaluations)',
-    'Curricular units 2nd sem (credited)', 'Curricular units 2nd sem (enrolled)',
-    'Curricular units 2nd sem (evaluations)', 'Curricular units 2nd sem (approved)',
-    'Curricular units 2nd sem (grade)', 'Curricular units 2nd sem (without evaluations)',
-    'Unemployment rate', 'Inflation rate', 'GDP', 'Target'
-]
+# ---------------------------------------------
 
-# 노트북에서 drop된 컬럼들 (재학습 시 동일하게 적용)
-DROPPED_COLUMNS_FOR_RETRAIN = [
-    'Application mode', 'Application order', 'Nacionality',
-    "Mother's qualification", "Father's qualification", 'International',
-    'Curricular units 1st sem (credited)', 'Curricular units 1st sem (enrolled)',
-    'Curricular units 1st sem (evaluations)', 'Curricular units 1st sem (without evaluations)',
-    'Curricular units 2nd sem (credited)', 'Curricular units 2nd sem (enrolled)',
-    'Curricular units 2nd sem (evaluations)', 'Curricular units 2nd sem (without evaluations)',
-    'Unemployment rate', 'Inflation rate', 'GDP'
-]
-
-# 모델 로드 함수 (st.cache_resource 사용)
+# --- 모델 로드 및 세션 상태 초기화 ---
 @st.cache_resource
-def load_model_pipeline():
-    model_path = os.path.join(MODELS_DIR, 'best_model_pipeline.pkl')
+def load_model():
+    model_path = os.path.join("models", "best_model_pipeline.pkl")
     if os.path.exists(model_path):
         try:
             model = joblib.load(model_path)
             return model
         except Exception as e:
-            st.error(f"모델 로딩 중 오류 발생: {e}")
+            print(f"모델 로딩 중 오류 발생: {e}")
             return None
     else:
-        st.error(f"경로 '{model_path}'에서 모델 파일을 찾을 수 없습니다. `project.ipynb`를 실행하여 모델을 먼저 저장해주세요.")
+        print(f"경고: '{model_path}' 에서 모델 파일을 찾을 수 없습니다.")
         return None
 
-# 세션 상태 초기화
+
 if 'model' not in st.session_state:
-    st.session_state.model = load_model_pipeline()
-
-if 'student_info_df' not in st.session_state: # 예측할 학생의 DataFrame (숫자로 변환된 상태)
+    st.session_state.model = load_model()
+if 'student_info_df' not in st.session_state:
     st.session_state.student_info_df = None
-
-if 'form_input_original' not in st.session_state: # 결과 페이지 표시용 원본 입력값 (한글 포함)
+if 'form_input_original' not in st.session_state:
     st.session_state.form_input_original = None
+if 'student_name' not in st.session_state:
+    st.session_state.student_name = ""
+# ---------------------------------------------
 
-# --- CSS 스타일 ---
+LOGO_PATH = os.path.join("img", "logo.png")
+IMG1_PATH = os.path.join("img", "img1.png")
+
+
+def image_to_base64_data_uri(img_path):
+    if os.path.exists(img_path):
+        try:
+            img = Image.open(img_path)
+            buffered = BytesIO()
+            img_format = img.format.upper() if img.format else ("PNG" if img_path.lower().endswith(".png") else "JPEG")
+            if img_format == 'JPEG' and img.mode == 'RGBA':
+                img = img.convert('RGB')
+            img.save(buffered, format=img_format)
+            encoded_string = base64.b64encode(buffered.getvalue()).decode()
+            return f"data:image/{img_format.lower()};base64,{encoded_string}"
+        except Exception as e:
+            print(f"Error encoding image {img_path}: {e}")
+            return ""
+    return ""
+
+
+logo_data_uri = image_to_base64_data_uri(LOGO_PATH)
+hero_bg_img_data_uri = image_to_base64_data_uri(IMG1_PATH)
+
+# CSS
 st.markdown(
-    """
+    f"""
     <style>
-    /* ... (제공해주신 CSS 스타일 그대로 유지) ... */
-    .main .block-container { /* 메인 콘텐츠 영역 상단 패딩 조정 */
-        padding-top: 80px !important; /* 헤더 높이 고려 */
-    }
-    .nav-menu a.active, .nav-menu a:hover { /* 활성/호버 메뉴 스타일 */
-        color: #007bff; 
-        text-decoration: underline;
-    }
+    /* 기본 Streamlit 패딩 및 헤더 제거 */
+    .main .block-container {{ padding: 0 !important; max-width: 100%; }}
+    .st-emotion-cache-ckbrp0, .st-emotion-cache-t1wise {{ padding-left: 0 !important; padding-right: 0 !important; }}
+    .stApp > header {{ display: none; }}
+
+    /* 헤더 스타일 */
+    .header-container {{
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 20px 100px; background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        width: 100%; position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    }}
+    .logo-img {{ height: 30px; width: auto; }}
+    .nav-menu ul {{ list-style: none; margin: 0; padding: 0; display: flex; }}
+    .nav-menu li {{ margin-left: 30px; }}
+    .nav-menu a {{ text-decoration: none; color: #333; font-weight: bold; font-size: 16px; padding: 8px 12px; border-radius: 4px; transition: all 0.3s ease; }}
+    .nav-menu a:hover {{ color: #007bff; background-color: #f0f0f0; }}
+    .nav-menu a[href="/input_form"] {{ cursor: pointer; }}
+
+    /* 히어로 섹션 스타일 */
+    .hero-section-wrapper {{ /* 이 div가 실제 배경과 컨텐츠를 포함 */
+        width: 100vw;
+        height: 75vh;
+        background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url({hero_bg_img_data_uri if hero_bg_img_data_uri else ""});
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        color: white;
+        padding: 20px;
+        margin-top: 80px; /* 헤더 높이만큼 여백 */
+    }}
+    .hero-section-wrapper h2 {{
+        font-size: 2.8em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #fff !important;
+    }}
+    .hero-section-wrapper h3 {{
+        font-size: 1.6em;
+        font-weight: 300;
+        margin-bottom: 40px; /* 버튼과의 간격 증가 */
+        color: #f0f0f0 !important;
+        max-width: 700px;
+        line-height: 1.5;
+    }}
+    /* 히어로 섹션 내 Streamlit 버튼 스타일 */
+    .hero-section-wrapper .stButton>button {{
+        background-color: white !important;
+        color: #007bff !important;
+        padding: 14px 50px !important;
+        border-radius: 30px !important;
+        font-weight: bold !important;
+        font-size: 1.1em !important;
+        border: 2px solid white !important;
+        transition: all 0.3s ease !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }}
+    .hero-section-wrapper .stButton>button:hover {{
+        background-color: #007bff !important;
+        color: white !important;
+        border-color: #007bff !important;
+        transform: scale(1.05) !important;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.25) !important;
+    }}
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# --- 헤더 섹션 ---
-try:
-    logo_image = Image.open(LOGO_PATH)
-    buffered = BytesIO()
-    logo_image.save(buffered, format="PNG")
-    logo_base64 = base64.b64encode(buffered.getvalue()).decode()
-    logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo">'
-except FileNotFoundError:
-    logo_html = '<span style="font-weight:bold; font-size: 20px;">PLAY DATA</span>' # 로고 없을 시 텍스트
-    st.error(f"로고 파일 '{LOGO_PATH}'을(를) 찾을 수 없습니다. 텍스트 로고로 대체합니다.")
-
-
-# 페이지 이동을 위한 JavaScript 함수
-def nav_page(page_script_path):
-    st.session_state.current_page = page_script_path # 현재 페이지 추적용
-    st.switch_page(page_script_path)
-
-# 헤더 HTML 구성
-# '학생관리' 메뉴를 pages/2_🧑‍🎓_학생_정보_입력.py 로 연결
-# 링크는 실제 파일 경로를 사용합니다.
-header_html = f"""
-<div class="header-container">
-    <div class="logo">
-        {logo_html}
-    </div>
-    <nav class="nav-menu">
-        <ul>
-            <li><a href="#">백엔드 캠프</a></li>
-            <li><a href="#">취업지원</a></li>
-            <li><a href="#">스토리</a></li>
-            <li><a href="#">캠퍼스투어</a></li>
-            <li><a href="#">파트너</a></li>
-            <li><a href="#">프리코스</a></li>
-            <li><a href="#" onclick="window.location.href='학생_정보_입력'; return false;">학생관리</a></li>
-            <li><a href="#">로그인</a></li>
-        </ul>
-    </nav>
-</div>
-"""
-# st.markdown(header_html, unsafe_allow_html=True) # 헤더는 각 페이지 상단에 표시되므로 주석 처리 또는 제거
-
-# 현재 페이지 확인 및 네비게이션 (쿼리 파라미터 사용 방식 제거)
-# Streamlit의 멀티페이지는 사이드바로 기본 제공되므로, 헤더의 링크는
-# st.page_link 또는 st.switch_page를 사용하는 버튼/콜백으로 처리하는 것이 더 Streamlit-native 합니다.
-# 여기서는 헤더의 "학생관리"를 클릭하면 input_form 페이지로 이동하는 버튼을 아래에 만듭니다.
+# --- 헤더 렌더링 ---
+if logo_data_uri:
+    st.markdown(
+        f"""
+        <div class="header-container">
+            <div class="logo">
+                <a href="/" target="_self">
+                    <img src="{logo_data_uri}" class="logo-img" alt="PLAY DATA Logo">
+                </a>
+            </div>
+            <nav class="nav-menu">
+                <ul>
+                    <li><a href="#">백엔드 캠프</a></li>
+                    <li><a href="#">취업지원</a></li>
+                    <li><a href="#">스토리</a></li>
+                    <li><a href="#">캠퍼스투어</a></li>
+                    <li><a href="#">파트너</a></li>
+                    <li><a href="#">프리코스</a></li>
+                    <li><a href="/input_form" target="_self">학생관리</a></li>
+                    <li><a href="#">로그인</a></li>
+                </ul>
+            </nav>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+else:
+    st.error("로고 이미지를 로드할 수 없습니다.")
 
 # --- 히어로 섹션 ---
-try:
-    img1_image = Image.open(IMG1_PATH)
-    buffered_bg = BytesIO()
-    img1_image.save(buffered_bg, format="PNG") # 이미지 형식에 맞게
-    img1_base64 = base64.b64encode(buffered_bg.getvalue()).decode()
-    hero_bg_img_html = f'<img src="data:image/png;base64,{img1_base64}" class="background-img" alt="PLAY DATA Interior">'
-except FileNotFoundError:
-    hero_bg_img_html = '<div style="background-color:#333; width:100%; height:100%; position:absolute; top:0; left:0; z-index:1;"></div>' # 배경 이미지 없을 시 단색 배경
-    st.error(f"배경 이미지 파일 '{IMG1_PATH}'을(를) 찾을 수 없습니다. 단색 배경으로 대체합니다.")
-
-st.markdown(
-    f"""
-    <div class="header-container">
-        <div class="logo">
-            {logo_html}
+if hero_bg_img_data_uri:
+    # st.markdown을 사용하여 HTML 구조를 만들고, 그 안에는 텍스트만 넣습니다.
+    # Streamlit 버튼은 Python 코드에서 별도로 생성합니다.
+    st.markdown(
+        f"""
+        <div class="hero-section-wrapper">
+            <h2>PLAY DATA와 함께</h2>
+            <h3>개발자로 첫걸음을 내딛는 모든 학생 여러분을 응원합니다.</h3>
         </div>
-        <nav class="nav-menu">
-            <ul>
-                <li><a href="#">백엔드 캠프</a></li>
-                <li><a href="#">취업지원</a></li>
-                <li><a href="#">스토리</a></li>
-                <li><a href="#">캠퍼스투어</a></li>
-                <li><a href="#">파트너</a></li>
-                <li><a href="#">프리코스</a></li>
-            </ul>
-        </nav>
-    </div>
-    <div class="hero-section">
-        {hero_bg_img_html}
-        <div class="overlay-text">
-            <h1>PLAY DATA에서</h1>
-            <h2>개발자 커리어로 출발하는 모든 학생들을</h2>
-            <h3>응원합니다.</h3>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """,
+        unsafe_allow_html=True
+    )
+    # 버튼을 위한 별도의 st.container 또는 st.columns를 사용 (CSS 클래스를 직접 적용하기 어려움)
+    # 대신, 버튼을 hero-section-wrapper 바로 아래에 배치하고 CSS로 위치 조정 시도
+    # (이전 답변에서 이 부분이 혼란을 드린 것 같습니다.)
+    # 가장 간단한 방법은, 버튼을 이 markdown 바로 아래에 배치하고,
+    # CSS에서 .hero-section-wrapper에 position:relative를 주고,
+    # 버튼을 담을 div(st.markdown으로 생성)에 position:absolute 및 bottom, left 등으로 위치를 잡는 것입니다.
+    # 또는, Streamlit의 레이아웃 기능을 최대한 활용합니다.
 
-# "학생 관리" 버튼을 중앙에 배치하고, 클릭 시 페이지 이동
-st.markdown("<br>", unsafe_allow_html=True) # 간격
-cols_button = st.columns([2,1,2]) # 버튼을 중앙에 위치시키기 위한 컬럼
-with cols_button[1]:
-    if st.button("학생 관리 페이지로 이동", type="primary", use_container_width=True):
-        st.switch_page("pages/2_🧑‍🎓_학생_정보_입력.py")
+    # 버튼을 히어로 섹션의 일부처럼 보이게 하기 위한 컨테이너
+    # 이 컨테이너의 스타일을 CSS에서 조정하여 버튼 위치를 맞춥니다.
+    # (이전 답변의 margin-top: -150px; 와 유사한 방식이지만, 더 명확한 구조로)
+    st.markdown(
+        """
+        <style>
+            .hero-button-area {
+                width: 100%;
+                text-align: center;
+                margin-top: -100px; /* 히어로 섹션 텍스트 아래로 끌어올림 (값 조정 필요) */
+                position: relative; /* z-index 적용 위해 */
+                z-index: 3; /* 다른 히어로 요소들보다 위에 */
+            }
+        </style>
+        <div class="hero-button-area">
+        """, unsafe_allow_html=True
+    )
+    cols_hero_button = st.columns([2, 1, 2])  # 중앙 정렬용
+    with cols_hero_button[1]:
+        if st.button("학생 학업 여정 예측 시작 →", key="hero_button_on_image"):
+            st.switch_page("pages/input_form.py")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.sidebar.info("이 앱은 학생들의 학업 성취도를 예측합니다.")
+
+else:  # 배경 이미지 로드 실패 시
+    st.markdown('<div style="height: 100px;"></div>', unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align:center; color: #333; margin-top: 50px;'>PLAY DATA와 함께</h2>",
+                unsafe_allow_html=True)
+    st.markdown("<h3 style='text-align:center; color: #555;'>개발자로 첫걸음을 내딛는 모든 학생 여러분을 응원합니다.</h3>",
+                unsafe_allow_html=True)
+    cols_button_no_img_app_final = st.columns([1.5, 1, 1.5])
+    with cols_button_no_img_app_final[1]:
+        if st.button("학생 정보 입력 및 예측 시작 →", key="hero_button_start_no_img_app_final_v2"):
+            st.switch_page("pages/input_form.py")
+
+# --- 사이드바 ---
+st.sidebar.title("탐색 메뉴")
+st.sidebar.page_link("app.py", label="🏠 홈", icon="🏠")
+st.sidebar.page_link("pages/input_form.py", label="🧑‍🎓 학생 정보 입력", icon="🧑‍🎓")
+st.sidebar.page_link("pages/result.py", label="📈 예측 결과 보기", icon="📈")
+
+if st.session_state.get('model') is None:
+    st.sidebar.error("⚠️ 모델 로딩 실패!")
+else:
+    st.sidebar.success("✅ 예측 모델 준비 완료")
