@@ -12,6 +12,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+
+PROFILE_IMG_PATH = os.path.join("img", "user_img.png")
+
+# base64 인코딩
+try:
+    user_img = Image.open(PROFILE_IMG_PATH)
+    buffered = BytesIO()
+    user_img.save(buffered, format="PNG")
+    user_img_base64 = base64.b64encode(buffered.getvalue()).decode()
+    user_img_url = f"data:image/png;base64,{user_img_base64}"
+except FileNotFoundError:
+    user_img_url = "https://via.placeholder.com/120x120.png?text=+"
+
+
 # CSS 스타일링 (input_form.py와 동일)
 st.markdown(
     """
@@ -88,6 +102,10 @@ st.markdown(
         color: #666;
         background-color: #f5f5f5;
     }
+    
+    .st-emotion-cache-16tyu1 table {
+        margin-bottom : 0 !important;
+    }
     .nav-menu button {
         background: none;
         border: none;
@@ -144,9 +162,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 헤더와 겹치지 않게 충분한 여백 추가
-st.markdown('<div style="height: 100px;"></div>', unsafe_allow_html=True)
-
 # 학생 정보 예시 (실제 데이터로 대체)
 student_name = '김의령'
 student_info = {
@@ -162,18 +177,23 @@ student_info = {
     '등록금 납부': '아니오',
 }
 
+# 헤더와 겹치지 않게 충분한 여백 추가
+st.markdown('<div style="height: 40px;"></div>', unsafe_allow_html=True)
+st.markdown(f'<div style="font-weight:bold; font-size:20px; margin-bottom:20px;">{student_name} 님 정보</div>',
+            unsafe_allow_html=True)
+st.markdown('<div style="height: 20px;"></div>', unsafe_allow_html=True)
+
 # 전체 너비 및 컬럼 비율 input_form.py와 맞춤
 col_img, col_info = st.columns([1, 2], gap="large")
 
 with col_img:
-    st.markdown(f'<div style="font-weight:bold; font-size:20px; margin-bottom:20px;">{student_name} 님 정보</div>', unsafe_allow_html=True)
     st.markdown(
         """
-        <div style="display:flex; justify-content:center; align-items:center; height:220px;">
+         <div style="display:flex; justify-content:center; align-items:center; height:220px;">
             <div style="width:180px; height:180px; border-radius:50%; background:#e0e0e0; display:flex; align-items:center; justify-content:center;">
-                <img src="https://via.placeholder.com/120x120.png?text=+" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
+                <img src="{user_img_url}" style="width:120px; height:120px; border-radius:50%; object-fit:cover;" />
             </div>
-        </div>
+         </div>
         """,
         unsafe_allow_html=True
     )
@@ -207,3 +227,144 @@ with col_info:
     </table>
     '''
     st.markdown(table2_html + table3_html, unsafe_allow_html=True)
+
+with col_info:
+    # 표 아래 자퇴 확률 섹션 추가
+    # 자퇴 확률 섹션 (3개 영역)
+    st.markdown("""
+    <style>
+    .flex-row-3col { display: flex; flex-direction: row; gap: 0px; margin-top: 40px; }
+    .flex-item-left { flex: 1; min-width: 180px; max-width: 220px; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 30px 0 30px 0; }
+    .flex-item-center { flex: 1.2; min-width: 320px; max-width: 400px; display: flex; align-items: center; justify-content: center; background: #fff; }
+    .flex-item-right { flex: 1.5; min-width: 320px; max-width: 520px; background: #f8f8f8; padding: 30px 30px 30px 30px; border-radius: 8px; font-size: 1.05em; color: #222; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 30px; }
+    .flex-item-right b, .flex-item-right strong { font-size: 1.1em; }
+    .flex-item-right .highlight { color: #dc3545; font-weight: bold; }
+    .flex-item-right .bold { font-weight: bold; }
+    @media (max-width: 900px) {
+        .flex-row-3col { flex-direction: column; }
+        .flex-item-left, .flex-item-center, .flex-item-right { max-width: 100%; width: 100%; margin-left: 0; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    avg_grade_1st = 14.8
+    avg_grade_2nd = 18.2
+    prob_dropout_pct = 79.7
+    student_name = "김의령"
+
+
+    st.markdown('<div class="flex-row-3col">', unsafe_allow_html=True)
+
+    # 왼쪽: 제목+성적
+    st.markdown(f'''
+    <div class="flex-item-left">
+        <div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">자퇴 확률</div>
+        <div style="font-size:1.05em; margin-bottom:6px;">1학기 성적 평균 : <b>{avg_grade_1st} 점</b></div>
+        <div style="font-size:1.05em;">2학기 성적 평균 : <b>{avg_grade_2nd} 점</b></div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # 가운데: 게이지 차트
+    st.markdown('<div class="flex-item-center">', unsafe_allow_html=True)
+    import plotly.graph_objects as go
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=prob_dropout_pct,
+        number={'suffix': "%", 'font': {'size': 48, 'color': '#888'}},
+        title={'text': "", 'font': {'size': 1}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "#dc3545" if prob_dropout_pct >= 75 else ("#ffc107" if prob_dropout_pct >= 50 else "#28a745")},
+            'steps': [
+                {'range': [0, 50], 'color': "rgba(40, 167, 69, 0.2)"},
+                {'range': [50, 75], 'color': "rgba(255, 193, 7, 0.2)"},
+                {'range': [75, 100], 'color': "rgba(220, 53, 69, 0.2)"}
+            ],
+            'threshold': {'line': {'color': "black", 'width': 2}, 'thickness': 0.8, 'value': prob_dropout_pct }
+        }
+    ))
+    fig_gauge.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=220, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig_gauge, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 오른쪽: 설명 텍스트
+    st.markdown(f'''
+    <div class="flex-item-right">
+        <div style="font-size:1.1em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span class="highlight">{prob_dropout_pct}%</span>로 예측되어,</div>
+        <div>현재 학업 지속에 <span class="bold">어려움을</span> 겪고 있을 가능성이 높습니다.<br>매니저님과 선생님의 <span class="bold">세심한 관심과 지원</span>이 필요하며,<br>학생의 학업 및 심리적 어려움을 함께 살펴보고 해결 방안을 모색해 주시면 좋겠습니다.</div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+
+col_img, col_info = st.columns([1], gap="large")
+
+with col_info:
+    # 표 아래 자퇴 확률 섹션 추가
+    # 자퇴 확률 섹션 (3개 영역)
+    st.markdown("""
+    <style>
+    .flex-row-3col { display: flex; flex-direction: row; gap: 0px; margin-top: 40px; }
+    .flex-item-left { flex: 1; min-width: 180px; max-width: 220px; background: #fff; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 30px 0 30px 0; }
+    .flex-item-center { flex: 1.2; min-width: 320px; max-width: 400px; display: flex; align-items: center; justify-content: center; background: #fff; }
+    .flex-item-right { flex: 1.5; min-width: 320px; max-width: 520px; background: #f8f8f8; padding: 30px 30px 30px 30px; border-radius: 8px; font-size: 1.05em; color: #222; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; margin-left: 30px; }
+    .flex-item-right b, .flex-item-right strong { font-size: 1.1em; }
+    .flex-item-right .highlight { color: #dc3545; font-weight: bold; }
+    .flex-item-right .bold { font-weight: bold; }
+    @media (max-width: 900px) {
+        .flex-row-3col { flex-direction: column; }
+        .flex-item-left, .flex-item-center, .flex-item-right { max-width: 100%; width: 100%; margin-left: 0; }
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    avg_grade_1st = 14.8
+    avg_grade_2nd = 18.2
+    prob_dropout_pct = 79.7
+    student_name = "김의령"
+
+
+    st.markdown('<div class="flex-row-3col">', unsafe_allow_html=True)
+
+    # 왼쪽: 제목+성적
+    st.markdown(f'''
+    <div class="flex-item-left">
+        <div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">자퇴 확률</div>
+        <div style="font-size:1.05em; margin-bottom:6px;">1학기 성적 평균 : <b>{avg_grade_1st} 점</b></div>
+        <div style="font-size:1.05em;">2학기 성적 평균 : <b>{avg_grade_2nd} 점</b></div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    # 가운데: 게이지 차트
+    st.markdown('<div class="flex-item-center">', unsafe_allow_html=True)
+    import plotly.graph_objects as go
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=prob_dropout_pct,
+        number={'suffix': "%", 'font': {'size': 48, 'color': '#888'}},
+        title={'text': "", 'font': {'size': 1}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "#dc3545" if prob_dropout_pct >= 75 else ("#ffc107" if prob_dropout_pct >= 50 else "#28a745")},
+            'steps': [
+                {'range': [0, 50], 'color': "rgba(40, 167, 69, 0.2)"},
+                {'range': [50, 75], 'color': "rgba(255, 193, 7, 0.2)"},
+                {'range': [75, 100], 'color': "rgba(220, 53, 69, 0.2)"}
+            ],
+            'threshold': {'line': {'color': "black", 'width': 2}, 'thickness': 0.8, 'value': prob_dropout_pct }
+        }
+    ))
+    fig_gauge.update_layout(margin=dict(l=10, r=10, t=10, b=10), height=220, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig_gauge, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # 오른쪽: 설명 텍스트
+    st.markdown(f'''
+    <div class="flex-item-right">
+        <div style="font-size:1.1em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span class="highlight">{prob_dropout_pct}%</span>로 예측되어,</div>
+        <div>현재 학업 지속에 <span class="bold">어려움을</span> 겪고 있을 가능성이 높습니다.<br>매니저님과 선생님의 <span class="bold">세심한 관심과 지원</span>이 필요하며,<br>학생의 학업 및 심리적 어려움을 함께 살펴보고 해결 방안을 모색해 주시면 좋겠습니다.</div>
+    </div>
+    ''', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
