@@ -324,14 +324,14 @@ with col_info:
 with col1:
     st.markdown("##### 기본 정보")
     age = st.number_input("입학 나이", min_value=15, max_value=40, value=20)
-    gender = st.selectbox("성별", ["여성", "남성"])
-    marital_status_selected = st.selectbox("결혼 상태", ["미혼", "기혼", "이혼"])
+    gender = st.selectbox("성별", gender_options)
+    marital_status_selected = st.selectbox("결혼 상태", marital_status)
 
 with col2:
     st.markdown("##### 학업 정보")
-    course = st.selectbox("수강 전공", ["경영학", "컴퓨터공학", "전자공학", "기타"])
-    attendance = st.selectbox("주/야간 수업", ["주간", "야간"])
-    prev_qualification = st.selectbox("이전 학력", ["고졸", "전문대졸", "학사", "기타"])
+    course = st.selectbox("수강 전공", course_options)
+    attendance = st.selectbox("주/야간 수업", attendance_options)
+    prev_qualification = st.selectbox("이전 학력", qualification_options)
 
 # 재정 및 환경 정보
 st.markdown("####")
@@ -339,15 +339,15 @@ st.markdown("##### 재정 및 환경 정보")
 col3, col4 = st.columns(2)
 
 with col3:
-    mother_job = st.selectbox("어머니 직업", ["서비스/보건/판매", "관리직", "기타"])
-    father_job = st.selectbox("아버지 직업", ["미숙련 근로자", "관리직", "기타"])
-    displaced = st.selectbox("이재민 여부", ["아니오", "예"])
-    special_needs = st.selectbox("특수 교육 필요 여부", ["아니오", "예"])
+    mother_job = st.selectbox("어머니 직업", occupation_options)
+    father_job = st.selectbox("아버지 직업", occupation_options)
+    displaced = st.selectbox("이재민 여부", yes_no_options)
+    special_needs = st.selectbox("특수 교육 필요 여부", yes_no_options)
 
 with col4:
-    debtor = st.selectbox("연체 여부", ["아니오", "예"])
-    tuition = st.selectbox("등록금 납부 여부", ["예", "아니오"])
-    scholarship = st.selectbox("장학금 수혜 여부", ["미수혜", "수혜"])
+    debtor = st.selectbox("연체 여부", yes_no_options)
+    tuition = st.selectbox("등록금 납부 여부", yes_no_options)
+    scholarship = st.selectbox("장학금 수혜 여부", scholarship_options)
 
 # 성적 정보
 st.markdown("####")
@@ -366,7 +366,7 @@ with col_button2:
     if st.button("예측 결과 확인", type="primary", use_container_width=True,
                  help="입력한 정보를 바탕으로 학생의 졸업 가능성을 예측합니다"):
         if not student_name.strip():
-            st.error("❗ 학생 이름을 입력해주세요.")
+            st.error("학생 이름을 입력해주세요.")
         else:
             # 원본 폼 데이터 (표시용)
             form_input_original = {
