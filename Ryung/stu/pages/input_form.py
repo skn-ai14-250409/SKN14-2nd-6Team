@@ -18,6 +18,7 @@ yes_no_options = list(mappings.yes_no_map.values())
 scholarship_options = list(mappings.scholarship_holder_map.values())
 
 LOGO_PATH = os.path.join("img", "logo.png")
+LOGO2_PATH = os.path.join("img", "logo2.png")
 USER_IMG_PATH = os.path.join("img", "user_img.png")
 
 st.set_page_config(
@@ -91,6 +92,11 @@ st.markdown(
     .logo-img {
         height: 30px;
         width: auto;
+    }
+    .logo-container {
+        display: flex;
+        align-items: end;
+        gap: 10px;
     }
     .st-emotion-cache-1ab9dzl {
         gap : 1rem;
@@ -184,6 +190,15 @@ except FileNotFoundError:
     st.stop()
 
 try:
+    logo2_image = Image.open(LOGO2_PATH)
+    buffered = BytesIO()
+    logo2_image.save(buffered, format="PNG")
+    logo2_base64 = base64.b64encode(buffered.getvalue()).decode()
+except FileNotFoundError:
+    st.error(f"로고2 파일 '{LOGO2_PATH}'을(를) 찾을 수 없습니다.")
+    st.stop()
+
+try:
     user_img = Image.open(USER_IMG_PATH)
     buffered = BytesIO()
     user_img.save(buffered, format="PNG")
@@ -196,10 +211,9 @@ except FileNotFoundError:
 st.markdown(
     f"""
     <div class="header-container">
-        <div class="logo">
-            <a href="/" target="_self">
-                <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo">
-            </a>
+        <div class="logo-container">
+            <img src="data:image/png;base64,{logo_base64}" class="logo-img" alt="PLAY DATA Logo" style="cursor: pointer;" onclick="window.location.href = 'http://localhost:8501';">
+            <img src="data:image/png;base64,{logo2_base64}" class="logo-img" alt="PLAY DATA Logo2" style="width: 100px; height: auto;">
         </div>
         <nav class="nav-menu">
             <ul>
