@@ -1,0 +1,92 @@
+{
+    "2": {
+        "sem1_avg": 12.71,
+        "sem2_avg": 12.79,
+        "annual_avg": 12.75
+    },
+    "11": {
+        "sem1_avg": 12.09,
+        "sem2_avg": 12.2,
+        "annual_avg": 12.14
+    },
+    "5": {
+        "sem1_avg": 12.88,
+        "sem2_avg": 12.65,
+        "annual_avg": 12.77
+    },
+    "15": {
+        "sem1_avg": 12.95,
+        "sem2_avg": 12.86,
+        "annual_avg": 12.9
+    },
+    "3": {
+        "sem1_avg": 12.35,
+        "sem2_avg": 12.46,
+        "annual_avg": 12.41
+    },
+    "17": {
+        "sem1_avg": 11.9,
+        "sem2_avg": 12.3,
+        "annual_avg": 12.1
+    },
+    "12": {
+        "sem1_avg": 13.35,
+        "sem2_avg": 13.44,
+        "annual_avg": 13.39
+    },
+    "10": {
+        "sem1_avg": 12.27,
+        "sem2_avg": 12.45,
+        "annual_avg": 12.36
+    },
+    "14": {
+        "sem1_avg": 12.71,
+        "sem2_avg": 12.84,
+        "annual_avg": 12.78
+    },
+    "16": {
+        "sem1_avg": 12.66,
+        "sem2_avg": 12.22,
+        "annual_avg": 12.44
+    },
+    "6": {
+        "sem1_avg": 13.41,
+        "sem2_avg": 12.97,
+        "annual_avg": 13.19
+    },
+    "8": {
+        "sem1_avg": 12.81,
+        "sem2_avg": 12.88,
+        "annual_avg": 12.85
+    },
+    "13": {
+        "sem1_avg": 12.34,
+        "sem2_avg": 12.92,
+        "annual_avg": 12.63
+    },
+    "9": {
+        "sem1_avg": 11.8,
+        "sem2_avg": 12.05,
+        "annual_avg": 11.93
+    },
+    "4": {
+        "sem1_avg": 12.89,
+        "sem2_avg": 12.68,
+        "annual_avg": 12.79
+    },
+    "1": {
+        "sem1_avg": 12.85,
+        "sem2_avg": 11.99,
+        "annual_avg": 12.42
+    },
+    "7": {
+        "sem1_avg": 12.66,
+        "sem2_avg": 12.77,
+        "annual_avg": 12.71
+    },
+    "overall": {
+        "sem1_avg": 12.7,
+        "sem2_avg": 12.73,
+        "annual_avg": 12.72
+    }
+}
