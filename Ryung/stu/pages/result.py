@@ -6,28 +6,35 @@ from io import BytesIO
 from utils.model_loader import load_model
 from utils import mappings
 
+st.set_page_config(
+    page_title="PLAY DATA - 예측 결과",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
+# 로고 이미지 경로 설정
 LOGO_PATH = os.path.join("img", "logo.png")
-##@@ 수정~ :
+
+# 세션 상태에서 데이터 가져오기
+if 'model' not in st.session_state:
+    st.error("모델이 로드되지 않았습니다.")
+    st.stop()
+
+if 'student_info_df' not in st.session_state:
+    st.error("학생 정보가 없습니다.")
+    st.stop()
+
+if 'form_input_original' not in st.session_state:
+    st.error("입력된 정보가 없습니다.")
+    st.stop()
+
+# 필요한 데이터 가져오기
 model = st.session_state.model
 student_df_for_prediction = st.session_state.student_info_df
-form_original_labels = st.session_state.form_input_original  # 표시용 원본 입력값
+form_original_labels = st.session_state.form_input_original
 student_name = form_original_labels.get("Student Name", "정보 없음")
 
-model = st.session_state.model
-student_df_for_prediction = st.session_state.student_info_df
-# session_state에 'model'이 없으면 기본값으로 초기화
-if 'model' not in st.session_state:
-    st.session_state.model = None  # 혹은 기본값(예: 'my_default_model')
-
-# 예측
-probabilities = model.predict_proba(student_df_for_prediction)
-prediction_numeric = model.predict(student_df_for_prediction)[0]
-predicted_status_label = mappings.target_map.get(prediction_numeric, "알 수 없음")
-
-prob_dropout_pct = round(probabilities[0, 0] * 100, 2)
-prob_graduate_pct = round(probabilities[0, 1] * 100, 2)
-
+# 예측 실행
 try:
     # 예측 확률 및 클래스
     probabilities = model.predict_proba(student_df_for_prediction)
@@ -46,13 +53,6 @@ except Exception as e:
     st.stop()
 
 ##@#-------------------------------
-
-
-st.set_page_config(
-    page_title="PLAY DATA - 마지막 페이지",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
 
 PROFILE_IMG_PATH = os.path.join("img", "user_img.png")
 
