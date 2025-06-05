@@ -286,7 +286,7 @@ with col_info:
 st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
 st.markdown('<div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">자퇴 확률</div>', unsafe_allow_html=True)
 # --- 두 번째 row: 자퇴 확률 (왼쪽: 성적/제목, 가운데: 게이지, 오른쪽: 설명) ---
-col_left, col_mid, col_right = st.columns([0.7, 1.1, 1.5], gap="medium")
+col_left, col_mid, col_right = st.columns([0.7, 1.0, 1.6], gap="medium")
 with col_left:
     # 왼쪽: 성적
     st.markdown(f'''
@@ -320,9 +320,40 @@ with col_mid:
 
 with col_right:
     # 오른쪽: 설명 텍스트
-    st.markdown(f'''
-    <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
-        <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #dc3545; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되어,</div>
-        <div>현재 학업 지속에 <span style="font-weight: bold;">어려움을</span> 겪고 있을 가능성이 높습니다.<br>매니저님과 선생님의 <span style="font-weight: bold;">세심한 관심과 지원</span>이 필요하며,<br>학생의 학업 및 심리적 어려움을 함께 살펴보고 해결 방안을 모색해 주시면 좋겠습니다.</div>
-    </div>
-    ''', unsafe_allow_html=True)
+    if prob_dropout_pct < 25:
+        message = f'''
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
+            <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #28a745; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되었습니다.</div>
+            <div>학업 지속에 문제가 없으며, 현재 매우 안정적으로 학교생활을 하고 있을 가능성이 높습니다.<br>꾸준한 학업 참여를 격려하며, 학생이 긍정적인 학교생활을 유지할 수 있도록 관심을 이어가 주세요.</div>
+        </div>
+        '''
+    elif prob_dropout_pct < 50:
+        message = f'''
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
+            <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #28a745; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되었습니다.</div>
+            <div>학업 지속에 큰 문제는 없어 보이나, 일부 작은 어려움이 있을 수 있습니다.<br>학생의 고민이나 생활 리듬을 주기적으로 살펴보며, 문제가 발생하기 전에 예방할 수 있도록 관심을 가져주세요.</div>
+        </div>
+        '''
+    elif prob_dropout_pct < 75:
+        message = f'''
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
+            <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #ffc107; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되었습니다.</div>
+            <div>학업 지속에 중간 정도의 어려움을 겪고 있을 가능성이 있습니다.<br>학생의 학업 태도, 생활 패턴, 심리 상태 등을 함께 살펴보며, 적절한 상담과 지원 방안을 마련해 주세요.</div>
+        </div>
+        '''
+    elif prob_dropout_pct < 100:
+        message = f'''
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
+            <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #dc3545; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되었습니다.</div>
+            <div>학업 지속에 상당한 어려움을 겪고 있을 가능성이 높습니다.<br>매니저님과 선생님의 세심한 관심과 지원이 필요하며, 학생의 학업 및 심리적 어려움을 함께 살펴보고 해결 방안을 모색해 주시면 좋겠습니다.</div>
+        </div>
+        '''
+    else:
+        message = f'''
+        <div style="background: #f8f8f8; padding: 30px; border-radius: 8px; font-size: 1.0em; color: #222; display: flex; flex-direction: column; justify-content: center; min-height: 160px;">
+            <div style="font-size:1.0em; font-weight:bold; margin-bottom:10px;"><b>{student_name}</b> 님의 자퇴 위험도가 <span style="color: #dc3545; font-weight: bold;">{prob_dropout_pct}%</span>로 예측되었습니다.</div>
+            <div>현재 학업 지속이 매우 어렵고, 자퇴 위험이 가장 높은 상태로 판단됩니다.<br>즉각적인 관심과 적극적인 상담, 맞춤형 지원이 반드시 필요합니다. 학생의 학업 및 심리적 상태를 면밀히 파악해 문제 해결을 위한 지원을 부탁드립니다.</div>
+        </div>
+        '''
+    
+    st.markdown(message, unsafe_allow_html=True)
