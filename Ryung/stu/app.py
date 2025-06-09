@@ -69,13 +69,27 @@ st.markdown(
         display: flex;
     }
     .nav-menu li {
-        margin-left: 35px;
+        background: none;
+        border: none;
+        padding: 8px 12px;
+        font: inherit;
+        color: #333;
+        font-weight: bold;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        
     }
     .nav-menu a {
         text-decoration: none;
         color: #333;
         font-weight: bold;
         font-size: 14px;
+    }
+    .nav-menu li:hover {
+        color: #666;
+        background-color: #f5f5f5;
     }
     .hero-section {
         position: relative;

@@ -83,19 +83,3 @@ gender_map_reverse = {v: k for k, v in gender_map.items()}
 attendance_map_reverse = {v: k for k, v in attendance_map.items()}
 scholarship_holder_map_reverse = {v: k for k, v in scholarship_holder_map.items()}
 
-# Additional mappings for simplified options used in the form
-course_map_reverse.update({
-    '컴퓨터공학': 7,  # 정보공학으로 매핑
-    '전자공학': 7,   # 정보공학으로 매핑  
-    '기타': 12
-})
-
-previous_qualification_map_reverse.update({
-    '전문대졸': 3,  # 학위로 매핑
-})
-
-occupation_map_reverse.update({
-    '서비스/보건/판매': 6,
-    '관리직': 5,
-    '미숙련 근로자': 10
-})

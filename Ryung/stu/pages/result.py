@@ -5,6 +5,8 @@ import base64
 from io import BytesIO
 from utils.model_loader import load_model
 from utils import mappings
+import pandas as pd
+import numpy as np
 
 st.set_page_config(
     page_title="PLAY DATA - 예측 결과",
@@ -379,13 +381,75 @@ st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
 # --- 세 번째 row: 성적 비교 그래프 ---
 st.markdown('<div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">성적 비교</div>', unsafe_allow_html=True)
 
-# 반 평균 성적 (예시 데이터 - 실제 데이터로 대체 필요)
-class_avg_1st = 14.5
-class_avg_2nd = 15.2
-class_min_1st = 10.0
-class_min_2nd = 11.0
-class_max_1st = 18.0
-class_max_2nd = 19.0
+# 데이터셋 불러오기
+possible_paths = [
+    "stu/data/dataset.csv",
+    "./stu/data/dataset.csv",
+    "../stu/data/dataset.csv",
+    "data/dataset.csv"
+]
+df = None
+for path in possible_paths:
+    if os.path.exists(path):
+        df = pd.read_csv(path)
+        break
+if df is None:
+    st.error("데이터셋 파일을 찾을 수 없습니다.")
+    st.stop()
+
+# Course 값 전처리 및 필터링
+if 'Course' in df.columns:
+    # Course 컬럼을 숫자형으로 변환
+    df['Course'] = pd.to_numeric(df['Course'], errors='coerce')
+    student_course = form_original_labels['Course']
+    # 입력값이 전공명일 경우 숫자로 변환
+    if not str(student_course).isdigit():
+        student_course_num = mappings.course_map_reverse.get(student_course)
+    else:
+        student_course_num = int(student_course)
+    df_filtered = df[df['Course'] == student_course_num]
+else:
+    df_filtered = df
+
+
+import numpy as np
+def safe_value(val):
+    return 0 if val is None or (isinstance(val, float) and np.isnan(val)) else val
+
+student_grade_1st = safe_value(form_original_labels["Curricular units 1st sem (grade)"])
+student_grade_2nd = safe_value(form_original_labels["Curricular units 2nd sem (grade)"])
+class_max_1st = safe_value(df_filtered['Curricular units 1st sem (grade)'].max())
+class_max_2nd = safe_value(df_filtered['Curricular units 2nd sem (grade)'].max())
+class_min_1st = safe_value(df_filtered['Curricular units 1st sem (grade)'].dropna().min())
+class_min_2nd = safe_value(df_filtered['Curricular units 2nd sem (grade)'].dropna().min())
+class_avg_1st = safe_value(df_filtered['Curricular units 1st sem (grade)'].mean())
+class_avg_2nd = safe_value(df_filtered['Curricular units 2nd sem (grade)'].mean())
+
+
+# 필터링 후 데이터 개수 확인 및 안내
+if df_filtered.empty:
+    st.warning(f"해당 전공({student_course}) 학생 데이터가 없습니다.")
+    st.stop()
+elif len(df_filtered) == 1:
+    st.info(f"해당 전공({student_course}) 학생이 1명뿐입니다. 통계가 의미 없을 수 있습니다.")
+
+# 1, 2학기 성적 컬럼명
+col_grade_1st = 'Curricular units 1st sem (grade)'
+col_grade_2nd = 'Curricular units 2nd sem (grade)'
+
+# 결측치 제거 및 0점 제외
+grades_1st = df_filtered[col_grade_1st].dropna()
+grades_2nd = df_filtered[col_grade_2nd].dropna()
+grades_1st_nozero = grades_1st[grades_1st > 0]
+grades_2nd_nozero = grades_2nd[grades_2nd > 0]
+
+# 반 평균/최고/최저 계산
+class_avg_1st = grades_1st.mean()
+class_avg_2nd = grades_2nd.mean()
+class_max_1st = grades_1st.max()
+class_max_2nd = grades_2nd.max()
+class_min_1st = grades_1st_nozero.min() if not grades_1st_nozero.empty else 0
+class_min_2nd = grades_2nd_nozero.min() if not grades_2nd_nozero.empty else 0
 
 # Plotly 그래프 생성
 import plotly.graph_objects as go
@@ -395,21 +459,21 @@ fig = go.Figure(data=[
         name='학생 성적',
         x=['1학기', '2학기'],
         y=[form_original_labels["Curricular units 1st sem (grade)"], form_original_labels["Curricular units 2nd sem (grade)"]],
-        marker_color='#08519c',  # PLATTER BLUES - 진한 파랑
+        marker_color='#08519c',
         width=0.2
     ),
     go.Bar(
         name='반 최고점',
         x=['1학기', '2학기'],
         y=[class_max_1st, class_max_2nd],
-        marker_color='#3182bd',  # PLATTER BLUES - 중간 파랑
+        marker_color='#3182bd',
         width=0.2
     ),
     go.Bar(
         name='반 최저점',
         x=['1학기', '2학기'],
         y=[class_min_1st, class_min_2nd],
-        marker_color='#6baed6',  # PLATTER BLUES - 연한 파랑
+        marker_color='#6baed6',
         width=0.2
     ),
     go.Scatter(
@@ -418,12 +482,12 @@ fig = go.Figure(data=[
         y=[class_avg_1st, class_avg_2nd],
         mode='lines+markers',
         line=dict(
-            color='#dc3545',  # 빨간색
-            width=3,  # 선 두께 증가
+            color='#dc3545',
+            width=3,
             dash='dot'
         ),
         marker=dict(
-            size=12,  # 마커 크기 증가
+            size=12,
             color='#dc3545',
             line=dict(
                 color='#dc3545',
@@ -456,56 +520,58 @@ fig.update_layout(
 st.plotly_chart(fig, use_container_width=True)
 
 # --- row 구분선 ---
+# 성적 비교용 값 출력 (디버깅)
+
+# --- row 구분선 ---
 st.markdown("<hr style='margin:40px 0 30px 0;'>", unsafe_allow_html=True)
 
 # --- 네 번째 row: 학점 분포도 ---
 st.markdown('<div style="font-size:1.25em; font-weight:bold; margin-bottom:18px;">학점 분포도</div>', unsafe_allow_html=True)
 
-# 예시 데이터 (실제 데이터로 대체 필요)
-grade_ranges = ['0-5', '5-10', '10-15', '15-20']
-class_distribution_1st = [5, 15, 45, 35]  # 1학기 분포 (%)
-class_distribution_2nd = [8, 18, 42, 32]  # 2학기 분포 (%)
-
-# 학생 성적
-student_grade_1st = form_original_labels["Curricular units 1st sem (grade)"]
-student_grade_2nd = form_original_labels["Curricular units 2nd sem (grade)"]
-
-# 그래프 생성
-fig2 = go.Figure()
+# 학점 구간 설정
+bins = [0, 5, 10, 15, 20]
+labels = ['0-5', '5-10', '10-15', '15-20']
 
 # 1학기 분포
+grade_bins_1st = pd.cut(grades_1st, bins=bins, labels=labels, right=True, include_lowest=True)
+class_distribution_1st = grade_bins_1st.value_counts(normalize=True).reindex(labels, fill_value=0) * 100
+
+# 2학기 분포
+grade_bins_2nd = pd.cut(grades_2nd, bins=bins, labels=labels, right=True, include_lowest=True)
+class_distribution_2nd = grade_bins_2nd.value_counts(normalize=True).reindex(labels, fill_value=0) * 100
+
+# 학생 성적 위치 (평균)
+student_grade_1st = form_original_labels["Curricular units 1st sem (grade)"]
+student_grade_2nd = form_original_labels["Curricular units 2nd sem (grade)"]
+student_grade = (student_grade_1st + student_grade_2nd) / 2
+student_grade_range = '10-15' if 10 <= student_grade < 15 else '15-20' if 15 <= student_grade <= 20 else '5-10' if 5 <= student_grade < 10 else '0-5'
+max_distribution = max(class_distribution_1st.max(), class_distribution_2nd.max())
+
+fig2 = go.Figure()
 fig2.add_trace(
     go.Bar(
         name='1학기 분포',
-        x=grade_ranges,
-        y=class_distribution_1st,
-        marker_color='#00897b',  # 청록색
+        x=labels,
+        y=class_distribution_1st.values,
+        marker_color='#00897b',
         opacity=0.7,
         width=0.4
     )
 )
-
-# 2학기 분포
 fig2.add_trace(
     go.Bar(
         name='2학기 분포',
-        x=grade_ranges,
-        y=class_distribution_2nd,
-        marker_color='#4db6ac',  # 연한 청록색
+        x=labels,
+        y=class_distribution_2nd.values,
+        marker_color='#4db6ac',
         opacity=0.7,
         width=0.4
     )
 )
-
-# 학생 성적 표시 (통합)
-student_grade = (student_grade_1st + student_grade_2nd) / 2  # 평균 성적
-grade_range = '10-15' if 10 <= student_grade < 15 else '15-20' if 15 <= student_grade <= 20 else '5-10' if 5 <= student_grade < 10 else '0-5'
-max_distribution = max(max(class_distribution_1st), max(class_distribution_2nd))
-
 fig2.add_trace(
     go.Scatter(
         name='학생 평균 성적',
-        x=[grade_range],
+        x=[student_grade_range],
         y=[max_distribution + 5],
         mode='markers',
         marker=dict(
@@ -516,8 +582,6 @@ fig2.add_trace(
         showlegend=False
     )
 )
-
-# 그래프 레이아웃 설정
 fig2.update_layout(
     title='학점 분포도',
     xaxis_title='학점 구간',
@@ -535,11 +599,8 @@ fig2.update_layout(
         x=1
     )
 )
-
-# 그래프 표시
 st.plotly_chart(fig2, use_container_width=True)
 
-# 범례 추가
 st.markdown('''
 <div style="text-align: center; margin-top: 10px;">
     <span style="color: #dc3545;">★</span> 학생 평균 성적 위치
